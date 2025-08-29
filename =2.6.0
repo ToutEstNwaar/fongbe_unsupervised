@@ -1,0 +1,12 @@
+Collecting tensorboardX
+  Downloading tensorboardX-2.6.2.2-py2.py3-none-any.whl.metadata (5.8 kB)
+Requirement already satisfied: numpy in /venv/fongbe_asr/lib/python3.8/site-packages (from tensorboardX) (1.23.5)
+Requirement already satisfied: packaging in /venv/fongbe_asr/lib/python3.8/site-packages (from tensorboardX) (25.0)
+Collecting protobuf>=3.20 (from tensorboardX)
+  Downloading protobuf-5.29.5-cp38-abi3-manylinux2014_x86_64.whl.metadata (592 bytes)
+Downloading tensorboardX-2.6.2.2-py2.py3-none-any.whl (101 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 101.7/101.7 kB 9.3 MB/s eta 0:00:00
+Downloading protobuf-5.29.5-cp38-abi3-manylinux2014_x86_64.whl (319 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 319.9/319.9 kB 62.4 MB/s eta 0:00:00
+Installing collected packages: protobuf, tensorboardX
+Successfully installed protobuf-5.29.5 tensorboardX-2.6.2.2

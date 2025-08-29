@@ -1,0 +1,5 @@
+Collecting npy-append-array
+  Downloading npy_append_array-0.9.19-py3-none-any.whl.metadata (4.0 kB)
+Downloading npy_append_array-0.9.19-py3-none-any.whl (10 kB)
+Installing collected packages: npy-append-array
+Successfully installed npy-append-array-0.9.19

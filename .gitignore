@@ -1,0 +1,72 @@
+# Model files and checkpoints
+*.pt
+*.pth
+*.bin
+*.ckpt
+*.joblib
+
+# Data directories
+fongbe_data/
+fongbe_features/
+fongbe_checkpoints/
+fongbe_tensorboard/
+
+# Audio files
+*.wav
+*.flac
+*.mp3
+
+# Numpy arrays and features
+*.npy
+*.npz
+
+# Log files
+*.log
+hydra_train.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Hydra outputs
+outputs/
+.hydra/
+
+# Fairseq compiled files
+fairseq/**/*.so
+fairseq/**/*.cpython-*
+fairseq/clib/
+
+# But keep the fairseq source code
+!fairseq/**/*.py
+!fairseq/**/*.yaml
+!fairseq/**/*.md
+!fairseq/**/*.sh
+!fairseq/**/*.cpp
+!fairseq/**/*.cu
+!fairseq/**/*.h
+!fairseq/**/*.pyx

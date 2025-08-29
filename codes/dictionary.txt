@@ -1,0 +1,90 @@
+# Fongbe Grapheme-to-Phoneme (G2P) Dictionary (Version 4 - Final)
+# Lowercase only, designed for pre-cleaned text corpus.
+# Format: GRAPHEME      PHONEME
+
+# --- CONSONANTS ---
+b       b
+c       tʃ
+d       d
+ɖ       ɖ
+đ       ɖ
+f       f
+g       ɡ
+gb      ɡb
+h       h
+j       dʒ
+k       k
+kp      kp
+l       l
+m       m
+n       n
+ny      ɲ
+p       p
+r       r
+s       s
+t       t
+v       v
+w       w
+x       x
+y       j
+z       z
+
+# --- ORAL VOWELS (WITH TONES) ---
+a       a
+á       á
+à       à
+ǎ       ǎ
+e       e
+é       é
+è       è
+ě       ě
+ɛ       ɛ
+ɛ́       ɛ́
+ɛ̀       ɛ̀
+ɛ̌       ɛ̌
+i       i
+í       í
+ì       ì
+ǐ       ǐ
+o       o
+ó       ó
+ò       ò
+ǒ       ǒ
+ɔ       ɔ
+ɔ́       ɔ́
+ɔ̀       ɔ̀
+ɔ̌       ɔ̌
+u       u
+ú       ú
+ù       ù
+ǔ       ǔ
+
+# --- NASAL VOWELS (WITH TONES) ---
+an      ã
+án      ã́
+àn      ã̀
+ǎn      ã̌
+en      ẽ
+én      ẽ́
+èn      ẽ̀
+ěn      ẽ̌
+ɛn      ɛ̃
+ɛ́n      ɛ̃́
+ɛ̀n      ɛ̃̀
+ɛ̌n      ɛ̃̌
+in      ĩ
+ín      ĩ́
+ìn      ĩ̀
+ǐn      ĩ̌
+on      õ
+ón      ṍ
+òn      õ̀
+ǒn      õ̌
+ɔn      ɔ̃
+ɔ́n      ɔ̃́
+ɔ̀n      ɔ̃̀
+ɔ̌n      ɔ̃̌
+un      ũ
+ún      ṹ
+ùn      ũ̀
+ǔn      ũ̌
