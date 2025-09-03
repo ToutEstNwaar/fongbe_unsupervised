@@ -28,7 +28,7 @@ if [[ "$ENV_NAME" != "fongbe_asr" ]]; then
 fi
 
 # Set required environment variables
-export FAIRSEQ_ROOT="/workspace/fairseq"
+export FAIRSEQ_ROOT="/workspace/fongbe_unsupervised/fairseq"
 
 # Check for required environment variables and tools (not needed for custom Fongbe text processing)
 # KENLM_ROOT and KALDI_ROOT are only needed for the official prepare_text.sh
