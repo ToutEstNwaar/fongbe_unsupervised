@@ -7,6 +7,19 @@ set -e
 echo "🚀 Setting up Fongbe wav2vec-U 2.0 ASR training environment..."
 echo "This will take 5-10 minutes to complete..."
 
+# Check system dependencies
+echo ""
+echo "🔍 Checking system dependencies..."
+for cmd in git gcc g++ make wget curl; do
+    if ! command -v $cmd &> /dev/null; then
+        echo "❌ Missing system dependency: $cmd"
+        echo "Please install build-essential and git:"
+        echo "  sudo apt update && sudo apt install build-essential git wget curl -y"
+        exit 1
+    fi
+done
+echo "✅ System dependencies found"
+
 # Create conda environment
 echo ""
 echo "📦 Creating conda environment 'fongbe_asr'..."
@@ -52,6 +65,27 @@ pip install transformers>=4.46.0
 pip install regex>=2024.0.0
 pip install requests>=2.32.0
 
+# Install fairseq-specific dependencies
+echo ""
+echo "📦 Installing fairseq-specific dependencies..."
+pip install sacrebleu>=2.5.0
+pip install scipy>=1.10.0
+pip install scikit-learn>=1.3.0
+pip install editdistance>=0.8.0
+pip install bitarray>=3.7.0
+pip install numba>=0.58.0
+pip install joblib>=1.4.0
+pip install protobuf>=5.29.0
+pip install Cython>=3.1.0
+pip install PyYAML>=6.0.0
+pip install lxml>=6.0.0
+pip install tabulate>=0.9.0
+
+# Install KenLM language model support
+echo ""
+echo "📦 Installing KenLM language model support..."
+pip install kenlm>=0.2.0
+
 echo ""
 echo "🧪 Testing installation..."
 
@@ -61,6 +95,19 @@ python -c "import fairseq; print('✅ Fairseq installed')"
 python -c "import librosa; print('✅ Librosa installed')"
 python -c "import transformers; print('✅ Transformers installed')"
 python -c "import soundfile; print('✅ Soundfile installed')"
+python -c "import scipy; print('✅ Scipy installed')"
+python -c "import sacrebleu; print('✅ SacreBLEU installed')"
+python -c "import sklearn; print('✅ Scikit-learn installed')"
+python -c "import numba; print('✅ Numba installed')"
+python -c "import kenlm; print('✅ KenLM installed')"
+
+# Test CUDA availability
+if python -c "import torch; exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
+    echo "✅ CUDA support verified"
+    python -c "import torch; print(f'   GPU devices: {torch.cuda.device_count()}')"
+else
+    echo "⚠️  CUDA not available - training will be very slow"
+fi
 
 echo ""
 echo "✅ Environment setup complete!"
