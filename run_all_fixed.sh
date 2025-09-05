@@ -12,8 +12,9 @@ TEXT_FEATURES_DIR="fongbe_text_features"
 LANGUAGE="fongbe"
 CLUSTERS=34
 LAYER=14
-MIN_PHONES=10
+MIN_PHONES=1
 SIL_PROB=0.5
+MIN_WORD_COUNT=1
 
 WORKSPACE_DIR="/workspace/fongbe_unsupervised"
 
@@ -136,7 +137,7 @@ with open('$TEXT_FEATURES_DIR/lm.upper.lid.txt', 'r') as f:
             word_counts[word] += 1
 with open('$TEXT_FEATURES_DIR/dict.txt', 'w') as f:
     for word, count in word_counts.most_common():
-        if count >= 2:
+        if count >= $MIN_WORD_COUNT:
             f.write(f'{word} {count}\n')
 "
 python3 -c "
