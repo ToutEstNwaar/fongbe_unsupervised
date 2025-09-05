@@ -10,7 +10,7 @@ echo "📖 Dataset: vnwaar/fongbe"
 echo
 
 # Create data directory
-DATA_DIR="fongbe_full_dataset"
+DATA_DIR="fongbe_data"
 echo "📁 Creating directory: $DATA_DIR"
 mkdir -p "$DATA_DIR"
 cd "$DATA_DIR"
@@ -147,6 +147,29 @@ else
 fi
 
 if [ "$SUCCESS" = true ]; then
+    # Organize files into audio/text subdirectories
+    echo
+    echo "🗂️ Organizing files into audio/text subdirectories..."
+    mkdir -p audio text
+    
+    # Move .wav files if they exist in the current directory
+    if ls *.wav 1> /dev/null 2>&1; then
+        echo "   Moving .wav files to audio/..."
+        mv *.wav audio/
+    else
+        echo "   No .wav files found in the root directory to move."
+    fi
+    
+    # Move .txt files if they exist in the current directory
+    if ls *.txt 1> /dev/null 2>&1; then
+        echo "   Moving .txt files to text/..."
+        mv *.txt text/
+    else
+        echo "   No .txt files found in the root directory to move."
+    fi
+    
+    echo "✅ File organization complete."
+
     # Analyze downloaded data
     echo
     echo "📊 Analyzing downloaded dataset..."
