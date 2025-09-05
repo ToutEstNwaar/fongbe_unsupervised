@@ -10,7 +10,7 @@ MODEL_PATH="xlsr_53_56k.pt"
 FEATURES_DIR="fongbe_features_official"
 TEXT_FEATURES_DIR="fongbe_text_features"
 LANGUAGE="fongbe"
-CLUSTERS=34
+CLUSTERS=64
 LAYER=14
 MIN_PHONES=1
 SIL_PROB=0.5
@@ -66,46 +66,50 @@ Path(os.path.join(output_dir, '.converted')).touch()
 fi
 
 echo "📄 Creating fairseq TSV manifests..."
-python3 -c "
-import os, soundfile as sf
-audio_dir = '$DATA_DIR/audio_16k'
-manifest_dir = '$DATA_DIR/manifests'
-os.makedirs(manifest_dir, exist_ok=True)
-wav_files = sorted([f for f in os.listdir(audio_dir) if f.endswith('.wav')])
-train_files = wav_files[:3]
-with open(os.path.join(manifest_dir, 'train.tsv'), 'w') as f:
-    f.write(os.path.abspath(audio_dir) + '\n')
-    for fname in train_files:
-        info = sf.info(os.path.join(audio_dir, fname))
-        f.write(f'{fname}\t{info.frames}\n')
-with open(os.path.join(manifest_dir, 'valid.tsv'), 'w') as f_out, open(os.path.join(manifest_dir, 'train.tsv'), 'r') as f_in:
-    f_out.write(f_in.read())
-"
+python3 create_splits.py
 
-# Step 3: Prepare audio features
+
+# Step 3: Prepare audio features (CORRECTED)
 echo "🎵 Step 3: Preparing audio features with k-means clustering..."
 mkdir -p "$FEATURES_DIR"
+mkdir -p "$FEATURES_DIR/mfcc"
+
 for split in train valid;
 do
     python3 "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/wav2vec_extract_features.py" \
         "$DATA_DIR/manifests" --split $split \
         --save-dir "$FEATURES_DIR" --checkpoint "$MODEL_PATH" --layer $LAYER
-done
-python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/dump_mfcc_feature.py" \
-    "$FEATURES_DIR" train 1 0 "$FEATURES_DIR/mfcc"
-python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/learn_kmeans.py" \
-    "$FEATURES_DIR/mfcc" train 1 "$FEATURES_DIR/mfcc/cls$CLUSTERS" $CLUSTERS \
-    --init k-means++ --max_iter 100 --batch_size 10000 --tol 0.0 --max_no_improvement 100 --n_init 20 --reassignment_ratio 0.5
-python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/dump_km_label.py" \
-    "$FEATURES_DIR/mfcc" train "$FEATURES_DIR/mfcc/cls$CLUSTERS" 1 0 "$FEATURES_DIR/mfcc/cls${CLUSTERS}_idx"
-cp "$FEATURES_DIR/mfcc/cls${CLUSTERS}_idx/train_0_1.km" "$FEATURES_DIR/train.km"
 
+    # Generate MFCC features for both splits
+    python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/dump_mfcc_feature.py" \
+        "$DATA_DIR/manifests" $split 1 0 "$FEATURES_DIR/mfcc"
+done
+
+# Learn the k-means model ONLY on the training data's MFCCs
+echo "Training k-means model on training data..."
+python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/learn_kmeans.py" \
+    "$FEATURES_DIR/mfcc/train_0_1.npy" "$FEATURES_DIR/cls$CLUSTERS.km" $CLUSTERS \
+    --percent 0.1 # Use a subset for faster training
+
+# Generate pseudo-labels (.km files) for BOTH train and valid splits using the trained model
+echo "Generating pseudo-labels for train and valid sets..."
+for split in train valid;
+do
+    python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/dump_km_label.py" \
+        "$FEATURES_DIR/mfcc/${split}_0_1.npy" "$FEATURES_DIR/cls$CLUSTERS.km" "$FEATURES_DIR/${split}.km"
+done
+
+# --- Symbolic linking (CORRECTED) ---
+echo "Creating symbolic links..."
 ln -sf "$WORKSPACE_DIR/$FEATURES_DIR/train.npy" "$WORKSPACE_DIR/$DATA_DIR/manifests/train.npy"
 ln -sf "$WORKSPACE_DIR/$FEATURES_DIR/valid.npy" "$WORKSPACE_DIR/$DATA_DIR/manifests/valid.npy"
+
 ln -sf "$WORKSPACE_DIR/$FEATURES_DIR/train.km" "$WORKSPACE_DIR/$DATA_DIR/manifests/train.km"
 ln -sf "$WORKSPACE_DIR/$FEATURES_DIR/valid.km" "$WORKSPACE_DIR/$DATA_DIR/manifests/valid.km"
+
 ln -sf "$WORKSPACE_DIR/$FEATURES_DIR/train.lengths" "$WORKSPACE_DIR/$DATA_DIR/manifests/train.lengths"
 ln -sf "$WORKSPACE_DIR/$FEATURES_DIR/valid.lengths" "$WORKSPACE_DIR/$DATA_DIR/manifests/valid.lengths"
+
 
 # Step 4: Prepare text data
 echo "📝 Step 4: Preparing Fongbe text data..."
@@ -115,33 +119,25 @@ if [ ! -f "$TEXT_CORPUS" ]; then
 fi
 mkdir -p "$TEXT_FEATURES_DIR/phones"
 python3 -c "
-import sys, re
+import os, sys, re, random
 from collections import Counter
-def normalize_fongbe_text(text):
-    text = text.lower().strip()
-    text = re.sub(r'\s+', ' ', text)
-    text = re.sub(r'[^\w\s'']', '', text)
-    text = re.sub(r'\d+', '', text)
-    return text
-with open('$TEXT_CORPUS', 'r', encoding='utf-8') as f, open('$TEXT_FEATURES_DIR/lm.upper.lid.txt', 'w') as f_out:
-    for line in f:
-        line = line.strip()
-        if line:
-            normalized = normalize_fongbe_text(line)
-            if normalized and len(normalized.split()) >= 2:
-                f_out.write(normalized + '\n')
-word_counts = Counter()
-with open('$TEXT_FEATURES_DIR/lm.upper.lid.txt', 'r') as f:
-    for line in f:
-        for word in line.strip().split():
-            word_counts[word] += 1
-with open('$TEXT_FEATURES_DIR/dict.txt', 'w') as f:
-    for word, count in word_counts.most_common():
-        if count >= $MIN_WORD_COUNT:
-            f.write(f'{word} {count}\n')
-"
-python3 -c "
-import sys, re
+
+# --- Config ---
+TEXT_CORPUS = '$DATA_DIR/combined_text.txt'
+TEXT_FEATURES_DIR = '$TEXT_FEATURES_DIR'
+G2P_DICT_PATH = '$G2P_DICT'
+MIN_WORD_COUNT = $MIN_WORD_COUNT
+MIN_PHONES = $MIN_PHONES
+SIL_PROB = $SIL_PROB
+
+# --- File Paths ---
+NORMALIZED_TEXT_PATH = os.path.join(TEXT_FEATURES_DIR, 'lm.upper.lid.txt')
+WORD_DICT_PATH = os.path.join(TEXT_FEATURES_DIR, 'dict.txt')
+PHONEMIZED_SENTENCES_PATH = os.path.join(TEXT_FEATURES_DIR, 'lm.phones.sil.txt')
+LEXICON_PATH = os.path.join(TEXT_FEATURES_DIR, 'lexicon.lst')
+PHONE_DICT_PATH = os.path.join(TEXT_FEATURES_DIR, 'phones', 'dict.phn.txt')
+
+# --- G2P Functions ---
 def load_g2p_dictionary(dict_path):
     g2p_dict = {}
     with open(dict_path, 'r', encoding='utf-8') as f:
@@ -150,51 +146,14 @@ def load_g2p_dictionary(dict_path):
                 grapheme, phoneme = line.strip().split('\t', 1)
                 g2p_dict[grapheme] = phoneme
     return g2p_dict
+
 def apply_g2p_rules(word, g2p_dict):
     word = re.sub(r'([aeiouɛɔ])n([ptk])', r'\1̃\2', word)
     word = re.sub(r'([aeiouɛɔ])m([pb])', r'\1̃\2', word)
-    word = re.sub(r'([aeiouɛɔ])n$', r'\1̃', word)
-    word = re.sub(r'([aeiouɛɔ])m$', r'\1̃', word)
-    result = []
-    i = 0
-    while i < len(word):
-        found = False
-        for length in range(min(3, len(word) - i), 0, -1):
-            substr = word[i:i+length]
-            if substr in g2p_dict:
-                result.append(g2p_dict[substr])
-                i += length
-                found = True
-                break
-        if not found:
-            result.append(word[i])
-            i += 1
-    return ' '.join(result)
-g2p_dict = load_g2p_dictionary('$G2P_DICT')
-with open('$TEXT_FEATURES_DIR/dict.txt', 'r') as f_in, open('$TEXT_FEATURES_DIR/phones.txt', 'w') as f_out:
-    for line in f_in:
-        word = line.strip().split()[0]
-        phones = apply_g2p_rules(word, g2p_dict)
-        f_out.write(phones + '\n')
-"
-paste "$TEXT_FEATURES_DIR/dict.txt" "$TEXT_FEATURES_DIR/phones.txt" > "$TEXT_FEATURES_DIR/lexicon.lst"
-python3 -c "
-from collections import Counter
-phone_counts = Counter()
-with open('$TEXT_FEATURES_DIR/phones.txt', 'r') as f:
-    for line in f:
-        for phone in line.strip().split():
-            phone_counts[phone] += 1
-with open('$TEXT_FEATURES_DIR/phones/dict.txt', 'w') as f:
-    for phone, count in phone_counts.most_common():
-        if count >= $MIN_PHONES:
-            f.write(f'{phone} {count}\n')
-"
-cp "$TEXT_FEATURES_DIR/phones/dict.txt" "$TEXT_FEATURES_DIR/phones/dict.phn.txt"
-echo "<SIL> 0" >> "$TEXT_FEATURES_DIR/phones/dict.phn.txt"
+    word = re.sub(r'([aeiouɛɔ])n\
 python3 "$FAIRSEQ_ROOT/fairseq_cli/preprocess.py" \
     --dataset-impl mmap \
-    --trainpref "$TEXT_FEATURES_DIR/lm.upper.lid.txt" \
+    --trainpref "$TEXT_FEATURES_DIR/lm.phones.sil.txt" \
     --workers 10 \
     --only-source \
     --destdir "$TEXT_FEATURES_DIR/phones" \
@@ -216,8 +175,8 @@ fairseq-hydra-train \
     checkpoint.save_dir="$CHECKPOINT_DIR" \
     common.tensorboard_logdir="$WORKSPACE_DIR/fongbe_tensorboard_official" \
     model.target_dim=$(wc -l < "$TEXT_FEATURES_DIR/phones/dict.phn.txt") \
-        optimization.max_update=20 \
-    dataset.batch_size=1 \
+        optimization.max_update=100000 \
+    dataset.batch_size=160 \
     dataset.validate_interval=1000
 
 echo "✅ Training pipeline complete!"
