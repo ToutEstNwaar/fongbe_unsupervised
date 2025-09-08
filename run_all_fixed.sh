@@ -165,6 +165,14 @@ cp "$TEXT_FEATURES_DIR/phones/dict.phn.txt" "$DATA_DIR/manifests/dict.phn.txt"
 echo "🚀 Step 5: Starting wav2vec-U 2.0 GAN training..."
 CHECKPOINT_DIR="$WORKSPACE_DIR/fongbe_checkpoints_official"
 mkdir -p "$CHECKPOINT_DIR"
+
+# Install wandb if not already installed
+pip install wandb
+
+# Initialize WandB (you'll need to login first time)
+echo "🔑 Setting up WandB logging..."
+echo "If this is your first time, you'll need to login to WandB"
+
 fairseq-hydra-train \
     --config-dir "$WORKSPACE_DIR" \
     --config-name "fongbe_training_config" \
@@ -173,7 +181,7 @@ fairseq-hydra-train \
     task.kenlm_path=null \
     common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" \
     checkpoint.save_dir="$CHECKPOINT_DIR" \
-    common.tensorboard_logdir="$WORKSPACE_DIR/fongbe_tensorboard_official" \
+    common.wandb_project="fongbe-wav2vec-u2" \
     model.target_dim=$(wc -l < "$TEXT_FEATURES_DIR/phones/dict.phn.txt") \
         optimization.max_update=100000 \
     dataset.batch_size=160 \
