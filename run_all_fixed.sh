@@ -21,23 +21,6 @@ WORKSPACE_DIR="/workspace/fongbe_unsupervised"
 echo "🎯 Unified Fongbe wav2vec-U 2.0 ASR Training Pipeline"
 echo "====================================================="
 
-# Activate conda environment
-echo "🔧 Activating conda environment 'fongbe_asr'..."
-if ! source /opt/miniforge3/bin/activate fongbe_asr; then
-    echo "❌ Failed to activate conda environment 'fongbe_asr'"
-    echo "Please run setup_env.sh first to create the environment"
-    exit 1
-fi
-
-# Verify environment is activated
-if [[ "$CONDA_DEFAULT_ENV" != "fongbe_asr" ]]; then
-    echo "❌ Environment activation failed. Current env: $CONDA_DEFAULT_ENV"
-    echo "Expected: fongbe_asr"
-    exit 1
-fi
-
-echo "✅ Environment 'fongbe_asr' activated successfully"
-
 # Set required environment variables
 export FAIRSEQ_ROOT="$WORKSPACE_DIR/fairseq"
 export PYTHONPATH=$FAIRSEQ_ROOT
