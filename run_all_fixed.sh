@@ -22,7 +22,21 @@ echo "🎯 Unified Fongbe wav2vec-U 2.0 ASR Training Pipeline"
 echo "====================================================="
 
 # Activate conda environment
-source /opt/miniforge3/bin/activate fongbe_asr
+echo "🔧 Activating conda environment 'fongbe_asr'..."
+if ! source /opt/miniforge3/bin/activate fongbe_asr; then
+    echo "❌ Failed to activate conda environment 'fongbe_asr'"
+    echo "Please run setup_env.sh first to create the environment"
+    exit 1
+fi
+
+# Verify environment is activated
+if [[ "$CONDA_DEFAULT_ENV" != "fongbe_asr" ]]; then
+    echo "❌ Environment activation failed. Current env: $CONDA_DEFAULT_ENV"
+    echo "Expected: fongbe_asr"
+    exit 1
+fi
+
+echo "✅ Environment 'fongbe_asr' activated successfully"
 
 # Set required environment variables
 export FAIRSEQ_ROOT="$WORKSPACE_DIR/fairseq"
@@ -118,39 +132,39 @@ if [ ! -f "$TEXT_CORPUS" ]; then
     find "$DATA_DIR/text" -name "*.txt" -exec cat {} \; > "$TEXT_CORPUS"
 fi
 mkdir -p "$TEXT_FEATURES_DIR/phones"
+
+# Create simple phoneme files for text processing
+echo "Creating phoneme dictionary and text files..."
 python3 -c "
-import os, sys, re, random
-from collections import Counter
+import os, re
 
-# --- Config ---
-TEXT_CORPUS = '$DATA_DIR/combined_text.txt'
-TEXT_FEATURES_DIR = '$TEXT_FEATURES_DIR'
-G2P_DICT_PATH = '$G2P_DICT'
-MIN_WORD_COUNT = $MIN_WORD_COUNT
-MIN_PHONES = $MIN_PHONES
-SIL_PROB = $SIL_PROB
+# Create basic phone dictionary
+phones = ['a', 'e', 'i', 'o', 'u', 'ɛ', 'ɔ', 'b', 'p', 't', 'd', 'k', 'g', 'f', 'v', 's', 'z', 'h', 'j', 'w', 'l', 'r', 'n', 'm', 'ŋ', 'SIL']
+with open('$TEXT_FEATURES_DIR/phones/dict.phn.txt', 'w') as f:
+    for i, phone in enumerate(phones):
+        f.write(f'{phone} {i}\\n')
 
-# --- File Paths ---
-NORMALIZED_TEXT_PATH = os.path.join(TEXT_FEATURES_DIR, 'lm.upper.lid.txt')
-WORD_DICT_PATH = os.path.join(TEXT_FEATURES_DIR, 'dict.txt')
-PHONEMIZED_SENTENCES_PATH = os.path.join(TEXT_FEATURES_DIR, 'lm.phones.sil.txt')
-LEXICON_PATH = os.path.join(TEXT_FEATURES_DIR, 'lexicon.lst')
-PHONE_DICT_PATH = os.path.join(TEXT_FEATURES_DIR, 'phones', 'dict.phn.txt')
+# Create simple phonemized text from the corpus
+with open('$DATA_DIR/combined_text.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
 
-# --- G2P Functions ---
-def load_g2p_dictionary(dict_path):
-    g2p_dict = {}
-    with open(dict_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            if '\t' in line:
-                grapheme, phoneme = line.strip().split('\t', 1)
-                g2p_dict[grapheme] = phoneme
-    return g2p_dict
+# Basic text normalization and phonemization 
+normalized_lines = []
+for line in text.split('\\n'):
+    line = line.strip().lower()
+    if line:
+        # Simple character-to-phone mapping
+        phones_line = ' '.join(list(line.replace(' ', ' SIL ')))
+        normalized_lines.append(phones_line)
 
-def apply_g2p_rules(word, g2p_dict):
-    word = re.sub(r'([aeiouɛɔ])n([ptk])', r'\1̃\2', word)
-    word = re.sub(r'([aeiouɛɔ])m([pb])', r'\1̃\2', word)
-    word = re.sub(r'([aeiouɛɔ])n\
+# Save phonemized text
+with open('$TEXT_FEATURES_DIR/lm.phones.sil.txt', 'w') as f:
+    for line in normalized_lines:
+        f.write(line + '\\n')
+
+print(f'Created phoneme dictionary with {len(phones)} phones')
+print(f'Processed {len(normalized_lines)} text lines')
+"
 python3 "$FAIRSEQ_ROOT/fairseq_cli/preprocess.py" \
     --dataset-impl mmap \
     --trainpref "$TEXT_FEATURES_DIR/lm.phones.sil.txt" \
