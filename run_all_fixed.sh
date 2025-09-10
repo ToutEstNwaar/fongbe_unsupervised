@@ -93,7 +93,7 @@ echo "Generating pseudo-labels for train and valid sets..."
 for split in train valid;
 do
     python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/dump_km_label.py" \
-        "$FEATURES_DIR/mfcc" $split 1 "$FEATURES_DIR/cls$CLUSTERS.km" "$FEATURES_DIR/${split}.km"
+        "$FEATURES_DIR/mfcc" $split "$FEATURES_DIR/cls$CLUSTERS.km" 1 0 "$FEATURES_DIR"
 done
 
 # --- Symbolic linking (CORRECTED) ---
