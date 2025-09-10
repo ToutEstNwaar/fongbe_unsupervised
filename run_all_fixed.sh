@@ -102,15 +102,15 @@ done
 # Learn the k-means model ONLY on the training data's MFCCs
 echo "Training k-means model on training data..."
 python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/learn_kmeans.py" \
-    "$FEATURES_DIR/mfcc/train_0_1.npy" "$FEATURES_DIR/cls$CLUSTERS.km" $CLUSTERS \
-    --percent 0.1 # Use a subset for faster training
+    "$FEATURES_DIR/mfcc" train 1 "$FEATURES_DIR/cls$CLUSTERS.km" $CLUSTERS \
+    --percent 0.1
 
 # Generate pseudo-labels (.km files) for BOTH train and valid splits using the trained model
 echo "Generating pseudo-labels for train and valid sets..."
 for split in train valid;
 do
     python3 "$FAIRSEQ_ROOT/examples/hubert/simple_kmeans/dump_km_label.py" \
-        "$FEATURES_DIR/mfcc/${split}_0_1.npy" "$FEATURES_DIR/cls$CLUSTERS.km" "$FEATURES_DIR/${split}.km"
+        "$FEATURES_DIR/mfcc" $split 1 "$FEATURES_DIR/cls$CLUSTERS.km" "$FEATURES_DIR/${split}.km"
 done
 
 # --- Symbolic linking (CORRECTED) ---
